@@ -11,6 +11,7 @@ class LocationModel {
   final String? imageUrl;
   final String? addedBy;
   final int likesCount;
+  final double? rating;
   final DateTime? createdAt;
 
   const LocationModel({
@@ -25,6 +26,7 @@ class LocationModel {
     this.imageUrl,
     this.addedBy,
     this.likesCount = 0,
+    this.rating,
     this.createdAt,
   });
 
@@ -44,6 +46,7 @@ class LocationModel {
       imageUrl: map['imageUrl'],
       addedBy: map['addedBy'],
       likesCount: map['likesCount'] ?? 0,
+      rating: (map['rating'] as num?)?.toDouble(),
       createdAt: map['createdAt']?.toDate(),
     );
   }
@@ -61,6 +64,7 @@ class LocationModel {
       'imageUrl': imageUrl,
       'addedBy': addedBy,
       'likesCount': likesCount,
+      'rating': rating,
       'createdAt': createdAt,
     };
   }
@@ -77,6 +81,7 @@ class LocationModel {
     String? imageUrl,
     String? addedBy,
     int? likesCount,
+    double? rating,
     DateTime? createdAt,
   }) {
     return LocationModel(
@@ -91,6 +96,7 @@ class LocationModel {
       imageUrl: imageUrl ?? this.imageUrl,
       addedBy: addedBy ?? this.addedBy,
       likesCount: likesCount ?? this.likesCount,
+      rating: rating ?? this.rating,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -98,13 +104,13 @@ class LocationModel {
 
 /// Location type categories
 enum LocationType {
-  poi,        // Point of interest
+  poi, // Point of interest
   restaurant,
   cafe,
   scenic,
   adventure,
   cultural,
-  hiddenGem,  // Community discovered spots
+  generated, // Community discovered spots
   campsite,
   restStop,
 }
