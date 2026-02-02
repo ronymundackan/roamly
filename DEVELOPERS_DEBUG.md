@@ -40,6 +40,7 @@ The project follows a **Feature-First** architecture. Code is organized by what 
   - **Interaction**:
     - **Tapping a Marker**: Opens a bottom sheet with details.
     - **My Location Button**: Uses `geolocator` to find you and center the map. **Visual**: Adds a blue dot marker.
+    - **Startup Behavior**: Automatically requests permissions and centers on the user's location with zoom level **19.0**.
 
 ### B. Adding a New Spot
 - **Files**: `lib/features/home/widgets/add_spot_dialog.dart`
@@ -88,6 +89,9 @@ We have added a custom **Debug Screen** to help with development.
   - Improved styling with proper icons and spacing.
   - Added new types to `LocationModel`.
 - **Debug Screen**: Created `lib/features/debug/` to expose internal app state.
+- **Map UX**:
+  - **Auto-Center**: App now immediately locks onto user location on startup.
+  - **Zoom Level**: Increased default zoom to **19.0** (Street Level) when locating user.
 
 ---
 
