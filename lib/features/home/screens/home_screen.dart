@@ -4,7 +4,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:roamly/core/core.dart';
 import 'package:roamly/core/services/location_service.dart';
 import 'package:roamly/models/location_model.dart';
+import 'package:geolocator/geolocator.dart';
 import '../widgets/add_spot_dialog.dart';
+import '../../debug/screens/debug_screen.dart';
 
 /// Home screen with map view and mark spot feature
 class HomeScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _mapController = MapController();
   List<LocationModel> _locations = [];
   final LatLng _center = const LatLng(12.9716, 77.5946); // Default: Bangalore
+  LatLng? _currentPosition;
 
   @override
   void initState() {
@@ -31,6 +34,54 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _locations = locs;
     });
+  }
+
+  Future<void> _handleLocationButton() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location services are disabled.')),
+        );
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permissions are denied')),
+          );
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Location permissions are permanently denied, we cannot request permissions.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      setState(() {
+        _currentPosition = LatLng(position.latitude, position.longitude);
+      });
+      _mapController.move(LatLng(position.latitude, position.longitude), 15);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error getting location: $e')));
+    }
   }
 
   Future<void> _handleAddSpot() async {
@@ -125,6 +176,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }).toList(),
               ),
+              if (_currentPosition != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _currentPosition!,
+                      width: 20,
+                      height: 20,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blue.withOpacity(0.3),
+                          border: Border.all(color: Colors.blue, width: 2),
+                        ),
+                        child: const Center(
+                          child: CircleAvatar(
+                            radius: 6,
+                            backgroundColor: Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
           // Quick action FAB
@@ -135,10 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 FloatingActionButton.small(
                   heroTag: 'location',
-                  onPressed: () {
-                    // TODO: Center on user location
-                    _mapController.move(_center, 13);
-                  },
+                  onPressed: _handleLocationButton,
                   backgroundColor: AppTheme.surfaceColor,
                   child: const Icon(
                     Icons.my_location,
@@ -317,6 +388,18 @@ class AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               // TODO: Navigate to help
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.developer_mode),
+            title: const Text('Developer Options'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const DebugScreen()),
+              );
             },
           ),
         ],

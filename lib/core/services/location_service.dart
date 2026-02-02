@@ -43,8 +43,8 @@ class LocationService {
       final existingPos = LatLng(loc.latitude, loc.longitude);
       final km = distance.as(LengthUnit.Kilometer, newPos, existingPos);
 
-      if (km < 5.0) {
-        return 'Too close to an existing spot "${loc.name}" (within 5km)';
+      if (km < 2.0) {
+        return 'Too close to an existing spot "${loc.name}" (within 2km)';
       }
     }
 

@@ -113,4 +113,6 @@ enum LocationType {
   generated, // Community discovered spots
   campsite,
   restStop,
+  favorite,
+  visited,
 }

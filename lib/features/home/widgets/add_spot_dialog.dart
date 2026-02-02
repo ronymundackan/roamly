@@ -21,6 +21,15 @@ class _AddSpotDialogState extends State<AddSpotDialog> {
   final _descController = TextEditingController();
   final _urlController = TextEditingController();
   double _rating = 3.0;
+  LocationType _selectedType = LocationType.generated;
+
+  // Map icons to location types for the dropdown
+  final Map<LocationType, IconData> _typeIcons = {
+    LocationType.generated: Icons.place,
+    LocationType.favorite: Icons.favorite,
+    LocationType.scenic: Icons.landscape,
+    LocationType.visited: Icons.beenhere,
+  };
 
   @override
   void dispose() {
@@ -33,63 +42,131 @@ class _AddSpotDialogState extends State<AddSpotDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Mark New Spot'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Location: ${widget.currentLat.toStringAsFixed(4)}, ${widget.currentLng.toStringAsFixed(4)}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Spot Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Please enter a name'
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _urlController,
-                decoration: const InputDecoration(
-                  labelText: 'Image URL (Optional)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('Rating: '),
-                  Expanded(
-                    child: Slider(
-                      value: _rating,
-                      min: 1,
-                      max: 5,
-                      divisions: 4,
-                      label: _rating.toString(),
-                      onChanged: (val) => setState(() => _rating = val),
-                    ),
+      title: Row(
+        children: [
+          Icon(Icons.add_location_alt, color: Theme.of(context).primaryColor),
+          const SizedBox(width: 8),
+          const Text('Mark New Spot'),
+        ],
+      ),
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.9,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  Text(_rating.toString()),
-                ],
-              ),
-            ],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.my_location, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${widget.currentLat.toStringAsFixed(4)}, ${widget.currentLng.toStringAsFixed(4)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Spot Name',
+                    hintText: 'e.g., Hidden Creek',
+                    prefixIcon: Icon(Icons.label_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please enter a name'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<LocationType>(
+                  value: _selectedType,
+                  decoration: const InputDecoration(
+                    labelText: 'Type',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  items: LocationType.values.map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Row(
+                        children: [
+                          Icon(_typeIcons[type] ?? Icons.place, size: 18),
+                          const SizedBox(width: 8),
+                          Text(type.name.toUpperCase()),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedType = val);
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'What makes this spot special?',
+                    prefixIcon: Icon(Icons.description_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _urlController,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'Image URL (Optional)',
+                    hintText: 'https://example.com/image.jpg',
+                    prefixIcon: Icon(Icons.image_outlined),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text('Rating', style: Theme.of(context).textTheme.titleMedium),
+                Row(
+                  children: [
+                    Text(
+                      _rating.toString(),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: _rating,
+                        min: 1,
+                        max: 5,
+                        divisions: 8,
+                        label: _rating.toString(),
+                        onChanged: (val) => setState(() => _rating = val),
+                      ),
+                    ),
+                    const Icon(Icons.star, color: Colors.amber),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -98,7 +175,7 @@ class _AddSpotDialogState extends State<AddSpotDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton(
+        FilledButton.icon(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               final newLocation = LocationModel(
@@ -110,13 +187,14 @@ class _AddSpotDialogState extends State<AddSpotDialog> {
                     ? _urlController.text
                     : null,
                 rating: _rating,
-                type: LocationType.generated,
+                type: _selectedType,
                 createdAt: DateTime.now(),
               );
               Navigator.pop(context, newLocation);
             }
           },
-          child: const Text('Add Spot'),
+          icon: const Icon(Icons.check),
+          label: const Text('Add Spot'),
         ),
       ],
     );
