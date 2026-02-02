@@ -27,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadLocations();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleLocationButton();
+    });
   }
 
   Future<void> _loadLocations() async {
@@ -75,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _currentPosition = LatLng(position.latitude, position.longitude);
       });
-      _mapController.move(LatLng(position.latitude, position.longitude), 15);
+      _mapController.move(LatLng(position.latitude, position.longitude), 19);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -147,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           FlutterMap(
             mapController: _mapController,
-            options: MapOptions(initialCenter: _center, initialZoom: 13.0),
+            options: MapOptions(initialCenter: _center, initialZoom: 19.0),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
