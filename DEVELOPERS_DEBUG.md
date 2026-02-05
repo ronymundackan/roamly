@@ -54,12 +54,12 @@ The project follows a **Feature-First** architecture. Code is organized by what 
   5. If valid, the spot is added to the in-memory list and the map updates.
 
 ### C. Data Storage
-- **Current Status**: **In-Memory / Mock Data**.
+- **Current Status**: **Firebase Firestore (Integrated)**.
 - **File**: `lib/core/services/location_service.dart`
 - **Details**:
-  - Data is NOT saved to a database permanently yet.
-  - Restarting the app resets the spots to the hardcoded defaults.
-  - `LocationService` simulates network delays (`Future.delayed`) to mimic a real backend.
+  - Uses `cloud_firestore` to read/write spots to the `locations` collection.
+  - Data **persists** across restarts.
+  - `addLocation()` performs a client-side proximity check (downloads spots, checks distance, then uploads).
 
 ### D. Navigation
 - **Drawer**: The primary navigation hub (`AppDrawer` in `home_screen.dart`).
@@ -92,6 +92,23 @@ We have added a custom **Debug Screen** to help with development.
 - **Map UX**:
   - **Auto-Center**: App now immediately locks onto user location on startup.
   - **Zoom Level**: Increased default zoom to **19.0** (Street Level) when locating user.
+
+### [2026-02-03] Firebase & Fixes
+- **Firebase Integration**:
+  - Integrated `firebase_core` and `cloud_firestore`.
+  - Replaced in-memory storage with real database persistence.
+- **"Add Spot" UX Fix**:
+  - Logic updated to force a GPS fetch when clicking "Add Spot" if the location is unknown.
+  - **Prioritization**: Defaults to User GPS -> Fallback to Map Center.
+  - Added SnackBar feedback ("Using Current GPS Location" vs "Using Map Center").
+
+### [2026-02-05] Admin Dashboard & Auth
+- **Authentication**: Added Firebase Email/Password Login.
+- **Moderation Workflow**:
+  - **New Spots**: Saved as `status: 'pending'`. Hidden from Home Screen.
+  - **Admin Dashboard**: New screen to view pending spots.
+  - **Approval**: Admins (`admin@roamly.com`) can approve or reject spots.
+  - **Home Screen**: Filters to show ONLY `status: 'approved'`.
 
 ---
 

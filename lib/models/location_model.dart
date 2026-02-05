@@ -13,6 +13,7 @@ class LocationModel {
   final int likesCount;
   final double? rating;
   final DateTime? createdAt;
+  final String status; // 'pending' or 'approved'
 
   const LocationModel({
     this.id,
@@ -28,6 +29,7 @@ class LocationModel {
     this.likesCount = 0,
     this.rating,
     this.createdAt,
+    this.status = 'pending',
   });
 
   factory LocationModel.fromMap(Map<String, dynamic> map) {
@@ -48,6 +50,7 @@ class LocationModel {
       likesCount: map['likesCount'] ?? 0,
       rating: (map['rating'] as num?)?.toDouble(),
       createdAt: map['createdAt']?.toDate(),
+      status: map['status'] ?? 'pending',
     );
   }
 
@@ -66,6 +69,7 @@ class LocationModel {
       'likesCount': likesCount,
       'rating': rating,
       'createdAt': createdAt,
+      'status': status,
     };
   }
 
@@ -83,6 +87,7 @@ class LocationModel {
     int? likesCount,
     double? rating,
     DateTime? createdAt,
+    String? status,
   }) {
     return LocationModel(
       id: id ?? this.id,
@@ -98,6 +103,7 @@ class LocationModel {
       likesCount: likesCount ?? this.likesCount,
       rating: rating ?? this.rating,
       createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
     );
   }
 }

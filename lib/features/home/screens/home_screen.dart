@@ -5,6 +5,7 @@ import 'package:roamly/core/core.dart';
 import 'package:roamly/core/services/location_service.dart';
 import 'package:roamly/models/location_model.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:roamly/features/auth/screens/login_screen.dart';
 import '../widgets/add_spot_dialog.dart';
 import '../../debug/screens/debug_screen.dart';
 
@@ -88,14 +89,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleAddSpot() async {
-    // Current map center as default for new spot
-    final currentCenter = _mapController.camera.center;
+    // Try to get the latest location if we don't have it yet
+    if (_currentPosition == null) {
+      try {
+        final position = await Geolocator.getCurrentPosition();
+        setState(() {
+          _currentPosition = LatLng(position.latitude, position.longitude);
+        });
+      } catch (e) {
+        debugPrint('Could not get current location for add spot: $e');
+      }
+    }
+
+    // Use current user location if available, otherwise map center
+    final LatLng spotLocation = _currentPosition ?? _mapController.camera.center;
+    
+    // Debug feedback for the user
+    if (!mounted) return;
+    if (_currentPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Using Map Center (GPS not found)'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else {
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Using Current GPS Location'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
 
     final LocationModel? newLocation = await showDialog<LocationModel>(
       context: context,
       builder: (context) => AddSpotDialog(
-        currentLat: currentCenter.latitude,
-        currentLng: currentCenter.longitude,
+        currentLat: spotLocation.latitude,
+        currentLng: spotLocation.longitude,
       ),
     );
 
@@ -393,7 +424,6 @@ class AppDrawer extends StatelessWidget {
               // TODO: Navigate to help
             },
           ),
-          const Divider(),
           ListTile(
             leading: const Icon(Icons.developer_mode),
             title: const Text('Developer Options'),
@@ -402,6 +432,18 @@ class AppDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const DebugScreen()),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.login),
+            title: const Text('Admin / Login'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
           ),

@@ -1,0 +1,204 @@
+Roamly: 6-Week Zero-Cost Prototype Implementation Plan
+
+Project Summary:
+
+Name: Roamly
+
+Goal: A community-driven travel app connecting solo travelers and riders for companionship, safety, and local discovery.
+
+Core Value: Facilitating real-time connection, itinerary sharing, and "hidden gem" discovery without paywalls.
+
+Target Audience: Solo travelers, bikers, and backpackers.
+
+Platform: Mobile (Android focus initially via Flutter).
+
+Budget: $0.00 (Strict constraint).
+
+Tech Stack:
+
+Frontend: Flutter (Dart).
+
+Backend: Firebase Spark Plan (Auth, Firestore, Storage).
+
+Maps: flutter_map (OpenStreetMap).
+
+State Management: Provider.
+
+IDE: VS Code.
+
+Phase 1: Environment & Foundation (Week 1)
+
+Objective: Establish the development environment and robust application skeleton.
+
+1.1 System Setup (Linux Environment)
+
+Install Flutter SDK (via snap or manual tarball).
+
+Install VS Code + Extensions: "Flutter", "Dart", "Pubspec Assist".
+
+Verify setup: Run flutter doctor.
+
+Agent Instruction: Initialize a new Flutter project named 'roamly'. Remove default counter app code.
+
+1.2 Project Architecture Implementation
+
+Create directory structure:
+
+Plaintext
+lib/
+├── core/ (constants, themes, utils)
+├── features/
+│   ├── auth/ (screens, services)
+│   ├── home/ (map screen, drawer)
+│   ├── profile/ (edit profile, view profile)
+│   └── community/ (chat, forums)
+├── models/ (User, Trip, Location data classes)
+├── providers/ (State management logic)
+└── services/ (Firebase & API clients)
+Learning Goal: Understand Separation of Concerns. Why UI code shouldn't touch Database code.
+
+1.3 Firebase Integration
+
+Create Firebase Project "Roamly-Proto".
+
+Register Android App (package name com.example.roamly).
+
+Download google-services.json to android/app/.
+
+Add dependencies: firebase_core, firebase_auth, cloud_firestore.
+
+Agent Instruction: Configure main.dart to initialize Firebase before running the app.
+
+Phase 2: Authentication & User Data (Week 2)
+
+Objective: Secure user entry and persistent profile management.
+
+2.1 Authentication Logic
+
+Implement FirebaseAuthService class.
+
+Methods: signUp(email, password), signIn(email, password), signOut().
+
+UI: create LoginScreen and RegisterScreen. Use simple TextFormField widgets.
+
+Agent Instruction: Ensure email validation regex is applied.
+
+2.2 Database Schema & Model
+
+Firestore Collection: users
+
+Document ID: uid (from Auth).
+
+Fields: username (string), email (string), bio (string), vehicle_type (string: "None/Bike/Car"), created_at (timestamp).
+
+Code: Create UserModel class with fromMap() and toMap() methods.
+
+2.3 Profile Management
+
+Create ProfileProvider to handle state (fetching user data, updating local view).
+
+Build ProfileScreen: Display info + "Edit" button.
+
+Constraint: No image uploading yet (save bandwidth for later). Use a placeholder icon.
+
+Phase 3: Maps & Location Core (Week 3)
+
+Objective: The "Roamly" feature – visualizing the world.
+
+3.1 Map Integration
+
+Add dependency: flutter_map, latlong2.
+
+Implement MapScreen using FlutterMap widget.
+
+Set TileLayer to OpenStreetMap standard URL (copyright attribution required).
+
+Agent Instruction: Set initial map zoom to a city level, not world view, to load fewer tiles.
+
+3.2 User Location
+
+Add dependency: geolocator.
+
+Add Android Permissions to AndroidManifest.xml: ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION.
+
+Create LocationService.
+
+Logic: On app start, get Position. Move map center to user.
+
+Visual: Add a "Current Location" marker (Blue Dot) to the map layers.
+
+Phase 4: Riders & Networking (Week 4)
+
+Objective: Visualizing the community.
+
+4.1 Database Logic for Riders
+
+Update UserModel to include last_known_lat (double) and last_known_long (double).
+
+Trigger: When user opens Map, update their Firestore document with current location.
+
+Optimization: Only update if moved > 500 meters to save Writes.
+
+4.2 Fetching Nearby Users
+
+Create RiderProvider.
+
+Query: Firestore.instance.collection('users').get() (Fetch all for prototype).
+
+Filter locally: Exclude current user.
+
+UI: Convert fetched users into Marker objects on the FlutterMap.
+
+Interaction: Tapping a marker shows a BottomSheet with that user's specific Profile data.
+
+Phase 5: Community Features (Week 5)
+
+Objective: Interaction and Content creation.
+
+5.1 Hidden Gems (The "Roamly" Factor)
+
+Schema: Collection places. Fields: name, description, lat, long, added_by_uid.
+
+UI: "Add Place" Floating Action Button on Map.
+
+Logic: Tap button -> Form Modal -> Save to Firestore -> Add Purple Marker to map.
+
+5.2 Itineraries (Read-Only)
+
+Simple List View: "Upcoming Trips".
+
+Schema: Collection trips. Fields: start_city, end_city, date, uid.
+
+Agent Instruction: Create a simple Card widget to display trip summary.
+
+Phase 6: Polish, Test & Launch (Week 6)
+
+Objective: Stabilization and usability.
+
+6.1 Error Handling
+
+Wrap async calls in try-catch blocks.
+
+Show SnackBar for errors (e.g., "No Internet", "Login Failed").
+
+6.2 Optimization Review
+
+Check build() methods. Ensure no database calls are inside them.
+
+Verify image assets are compressed (if any added).
+
+Agent Instruction: Run 'flutter build apk --release' to generate the installable file.
+
+6.3 Final Walkthrough
+
+Test: Login -> View Map -> See Self -> Click Marker -> Add "Hidden Gem" -> Logout.
+
+How to Use This with an Agentic AI (e.g., Cursor, Windsurf, or Replit Agent)
+
+When you are ready to code, copy-paste the specific Phase and Step instruction to the AI.
+
+Example Prompt for the AI:
+
+"Act as a Senior Flutter Developer. We are executing Phase 2.1 of the Roamly Plan. Please generate the FirebaseAuthService class code using firebase_auth. It should have sign-up and sign-in methods that return a User object or throw a custom error."
+
+This keeps the AI focused and prevents it from hallucinating features you can't afford.

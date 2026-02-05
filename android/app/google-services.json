@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "736425037332",
+    "project_id": "roamly-78bbb",
+    "storage_bucket": "roamly-78bbb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:736425037332:android:3869b4f1effe475e48a101",
+        "android_client_info": {
+          "package_name": "com.example.roamly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAf1-0edTzOtO39wGqc5KjASTXS9EROqdI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
