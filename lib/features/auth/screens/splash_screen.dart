@@ -38,15 +38,15 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-    _navigateToHome();
+    _navigateToLogin();
   }
 
-  void _navigateToHome() {
+  void _navigateToLogin() {
     Future.delayed(
       Duration(seconds: AppConstants.splashDuration),
       () {
         if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/home');
+          Navigator.of(context).pushReplacementNamed('/login');
         }
       },
     );

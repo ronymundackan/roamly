@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:roamly/core/core.dart';
 import 'package:roamly/core/services/location_service.dart';
 import 'package:roamly/models/location_model.dart';
-import 'package:roamly/features/auth/screens/login_screen.dart';
+import 'package:roamly/features/shared/widgets/spot_map_picker.dart';
+import 'package:roamly/features/home/widgets/add_spot_dialog.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -49,6 +52,54 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _loadPendingLocations();
   }
 
+  Future<void> _handleAddSpot() async {
+    // Show map picker to select location
+    final LatLng? selectedLocation = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SpotMapPicker(),
+      ),
+    );
+
+    if (selectedLocation == null || !mounted) return;
+
+    // Show dialog to enter spot details
+    final LocationModel? newLocation = await showDialog<LocationModel>(
+      context: context,
+      builder: (context) => AddSpotDialog(
+        currentLat: selectedLocation.latitude,
+        currentLng: selectedLocation.longitude,
+      ),
+    );
+
+    if (newLocation != null) {
+      // Admin adds spots directly as approved
+      final error = await _locationService.addLocationAsAdmin(newLocation);
+      if (!mounted) return;
+
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Spot added successfully and approved!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Reload pending list (though admin spots go directly to approved)
+        _loadPendingLocations();
+      }
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,12 +108,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-               Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
+            onPressed: _handleLogout,
+            tooltip: 'Logout',
           ),
         ],
       ),
@@ -149,6 +196,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     );
                   },
                 ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _handleAddSpot,
+        icon: const Icon(Icons.add_location_alt),
+        label: const Text('Add New Spot'),
+        tooltip: 'Add a new spot at any location',
+      ),
     );
   }
 }

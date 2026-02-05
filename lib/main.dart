@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import 'firebase_options.dart';
 import 'core/core.dart';
 import 'features/auth/screens/splash_screen.dart';
+import 'features/auth/screens/login_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/admin/screens/admin_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +35,9 @@ class RoamlyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/admin': (context) => const AdminDashboard(),
       },
     );
   }

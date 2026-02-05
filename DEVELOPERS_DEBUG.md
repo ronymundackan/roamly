@@ -1,176 +1,297 @@
-# Roamly Developer Guide & Product Overview
+# Roamly - Developer Debug Guide
 
-*Last Updated: 2026-02-02*
-
-Welcome to the Roamly project! This document serves as a "Brain Dump" of the current state of the application, designed to help new developers (and you in the future) understand how everything works under the hood.
-
----
-
-## 1. Product Overview
-**Roamly** is a travel discovery app that helps users find and mark "hidden gems" and interesting spots.
-- **Core Functionality**: View spots on a map, add new spots, and track your current location.
-- **Design Philosophy**: Simple, clean, and community-focused (simulated for now).
+## Overview
+Roamly is a travel companion app that allows users to discover and share travel spots. This document contains important development information, testing credentials, and debugging tips.
 
 ---
 
-## 2. Project Structure
-The project follows a **Feature-First** architecture. Code is organized by what it *does* (features) rather than what it *is* (screens, widgets).
+## Latest Updates (Feb 2026)
 
-### Directory Map (`lib/`)
-- **`core/`**: Utilities shared across the entire app.
-  - `constants/`: App-wide strings and configs.
-  - `services/`: Data providers. **Crucial**: `LocationService` lives here.
-  - `themes/`: Colors and styling.
-- **`features/`**: The main functional areas.
-  - `home/`: The main map interface (`HomeScreen`) and widgets (`AddSpotDialog`).
-  - `debug/`: Developer tools (`DebugScreen`).
-  - `auth/`: Login/Splash screens (currently basic).
-- **`models/`**: Data classes (Blueprints for data).
-  - `LocationModel`: Defines what a "Spot" looks like (lat, lng, name, type, etc.).
+### ✨ Authentication System Overhaul
+- **Login-first flow**: App now opens to login/signup screen instead of directly to map
+- **Tabbed interface**: Login and Sign Up tabs for easy switching
+- **Extended signup**: Collects full name, email, phone number, password, and confirmation
+- **Firestore integration**: User profiles stored in `users` collection with name and phone
 
----
+### ✨ Map Picker for Users & Admins
+- **User spot creation**: Choice dialog when adding spots
+  - "Current Location" - Uses GPS
+  - "Pick on Map" - Opens interactive map to select any location globally
+- **Admin spot creation**: Same map picker functionality
+- **No restrictions**: Removed 2km radius limitation - spots can be added anywhere
 
-## 3. How It Works (The "Meat")
+### 🗂️ Data Models
 
-### A. The Map & Home Screen
-- **Files**: `lib/features/home/screens/home_screen.dart`
-- **Logic**:
-  - Uses `flutter_map` to render OpenStreetMap tiles.
-  - **State**: Holds a list of `LocationModel` (spots) and the user's current location (`_currentPosition`).
-  - **Interaction**:
-    - **Tapping a Marker**: Opens a bottom sheet with details.
-    - **My Location Button**: Uses `geolocator` to find you and center the map. **Visual**: Adds a blue dot marker.
-    - **Startup Behavior**: Automatically requests permissions and centers on the user's location with zoom level **19.0**.
+#### UserProfile (Firestore: `users/{uid}`)
+```dart
+{
+  uid: String,           // Firebase Auth UID
+  email: String,         // User email
+  name: String,          // Full name
+  phoneNumber: String,   // Phone number (min 10 digits)
+  createdAt: Timestamp   // Account creation
+}
+```
 
-### B. Adding a New Spot
-- **Files**: `lib/features/home/widgets/add_spot_dialog.dart`
-- **Workflow**:
-  1. User clicks the `+` Floating Action Button.
-  2. Map center coordinates are passed to the dialog.
-  3. User enters Name, Description, Type (Dropdown), and Rating.
-  4. **Validation Logic** (in `LocationService`):
-     - The app calculates the distance to *all other spots*.
-     - **Constraint**: You cannot add a spot within **2km** of an existing one.
-  5. If valid, the spot is added to the in-memory list and the map updates.
-
-### C. Data Storage
-- **Current Status**: **Firebase Firestore (Integrated)**.
-- **File**: `lib/core/services/location_service.dart`
-- **Details**:
-  - Uses `cloud_firestore` to read/write spots to the `locations` collection.
-  - Data **persists** across restarts.
-  - `addLocation()` performs a client-side proximity check (downloads spots, checks distance, then uploads).
-
-### D. Navigation
-- **Drawer**: The primary navigation hub (`AppDrawer` in `home_screen.dart`).
-- **Developer Options**: A hidden menu in the drawer that leads to the `DebugScreen`.
-- **Routing**: Currently uses simple `Navigator.push` for direct screen transitions.
+#### LocationModel (Firestore: `locations` collection)
+```dart
+{
+  id: String,
+  name: String,
+  latitude: double,
+  longitude: double,
+  description: String?,
+  imageUrl: String?,
+  rating: double,
+  type: LocationType,    // generated, favorite, scenic, visited
+  status: String,        // 'pending' or 'approved'
+  createdAt: Timestamp
+}
+```
 
 ---
 
-## 4. Developer Tools
-We have added a custom **Debug Screen** to help with development.
-- **Access**: Open Drawer -> Tap "Developer Options".
-- **Capabilities**:
-  - View raw GPS coordinates, altitude, and speed.
-  - Check Location Permission status.
-  - View device info (placeholder).
+## Testing Credentials
+
+### Admin Account
+- **Email**: `admin@roamly.com`
+- **Password**: (Set in Firebase Console)
+- **Access**: Admin Dashboard with pending spot approvals
+
+### Test User Accounts
+Create test accounts via the Sign Up tab with:
+- Full name
+- Email
+- Phone number (10+ digits)
+- Password (6+ characters)
 
 ---
 
-## 5. Recent Change Log (Significant Updates)
+## Quick Testing Guide
 
-### [2026-02-02] Location & UX Overhaul
-- **Added `geolocator`**: Replaced stubbed location logic with real GPS data.
-- **User Marker**: Added the "Blue Dot" to the map to show user position.
-- **Radius Update**: Changed the minimum distance between spots from **5km** to **2km**.
-- **Add Spot UI**:
-  - Added "Location Type" dropdown (Generated, Scenic, Favorite, Visited).
-  - Improved styling with proper icons and spacing.
-  - Added new types to `LocationModel`.
-- **Debug Screen**: Created `lib/features/debug/` to expose internal app state.
-- **Map UX**:
-  - **Auto-Center**: App now immediately locks onto user location on startup.
-  - **Zoom Level**: Increased default zoom to **19.0** (Street Level) when locating user.
+### 1. Signup Flow
+```
+Open app → Splash (3s) → Login/Signup
+Tap "Sign Up" tab
+Fill: Name, Email, Phone, Password, Confirm
+→ Creates Firebase Auth account
+→ Saves profile to Firestore users/{uid}
+→ Navigates to User Dashboard
+```
 
-### [2026-02-03] Firebase & Fixes
-- **Firebase Integration**:
-  - Integrated `firebase_core` and `cloud_firestore`.
-  - Replaced in-memory storage with real database persistence.
-- **"Add Spot" UX Fix**:
-  - Logic updated to force a GPS fetch when clicking "Add Spot" if the location is unknown.
-  - **Prioritization**: Defaults to User GPS -> Fallback to Map Center.
-  - Added SnackBar feedback ("Using Current GPS Location" vs "Using Map Center").
+### 2. User Add Spot with Map Picker
+```
+Login as user
+Tap + FAB
+Choose "Pick on Map"
+→ Interactive map opens
+Tap anywhere on map
+Tap "Select This Location"
+Fill spot details
+→ Spot created with status: 'pending'
+```
 
-### [2026-02-05] Admin Dashboard & Auth
-- **Authentication**: Added Firebase Email/Password Login.
-- **Moderation Workflow**:
-  - **New Spots**: Saved as `status: 'pending'`. Hidden from Home Screen.
-  - **Admin Dashboard**: New screen to view pending spots.
-  - **Approval**: Admins (`admin@roamly.com`) can approve or reject spots.
-  - **Home Screen**: Filters to show ONLY `status: 'approved'`.
-
----
-
-## 6. Future Roadmap (Notes for Self)
-- **Persistence**: Hook up `LocationService` to a local database (Hive/SQLite) or Firebase so spots match survives restarts.
-- **Search**: Implement the search bar logic in `HomeScreen`.
-- **Trips**: Build out the "My Trips" feature stubbed in the navigation bar.
+### 3. Admin Spot Management
+```
+Login as admin@roamly.com
+→ Admin Dashboard shows pending spots
+Tap "Approve" or "Reject"
+Tap "Add New Spot" FAB
+→ Map picker opens
+Select location globally
+Fill details
+→ Spot created with status: 'approved'
+```
 
 ---
 
-## 7. Detailed Codebase Walkthrough (File by File)
+## Important Files
 
-Here is a breakdown of every important file in the `lib/` folder and what it actually does.
+### Authentication
+- `lib/features/auth/screens/splash_screen.dart` - Navigates to login
+- `lib/features/auth/screens/login_screen.dart` - Tabbed login/signup with profile creation
+- `lib/models/user_profile_model.dart` - User profile data model
 
-### `lib/core/` (The Foundation)
-Shared tools used everywhere in the app.
+### Core Services
+- `lib/core/services/location_service.dart` - Location CRUD, removed 2km restriction
+  - `addLocation()` - User spots → pending
+  - `addLocationAsAdmin()` - Admin spots → approved
+  - `getPendingLocations()` - For admin approval queue
 
-- **`constants/app_constants.dart`**
-  - **What it is**: The "settings file" for hardcoded values.
-  - **Key Variables**:
-    - `splashDuration`: How long the intro lasts (2 seconds).
-    - `defaultLatitude/Longitude`: Where the map starts if we don't know the user's location (New Delhi).
-    - `appName`: "Roamly".
+### Shared Widgets
+- `lib/features/shared/widgets/spot_map_picker.dart` - Interactive map picker (used by both user & admin)
 
-- **`services/location_service.dart`**
-  - **What it is**: The "Fake Backend". In a real app, this would talk to a server.
-  - **Key Functions**:
-    - `getLocations()`: Returns the list of spots. Simulates a 0.5s network delay.
-    - `addLocation()`: THE BRAIN. It checks if a new spot is valid (e.g., is it >2km from others?) before adding it.
+### Screens
+- `lib/features/home/screens/home_screen.dart` - User dashboard with map, location choice dialog
+- `lib/features/admin/screens/admin_dashboard.dart` - Admin dashboard with approval queue
 
-- **`themes/app_theme.dart`**
-  - **What it is**: The Style Guide.
-  - **Details**: Defines the "Orange & Teal" color palette (`primaryColor`, `secondaryColor`). It tells the app what buttons, text fields, and app bars should look like globally.
+### Routing
+- `lib/main.dart` - Routes: `/` (splash), `/login`, `/home`, `/admin`
 
-### `lib/features/` (The Screens)
-Organized by "Feature" (Auth, Home, Debug) instead of "Screen Type".
+---
 
-#### Auth Feature (`features/auth/`)
-- **`screens/splash_screen.dart`**
-  - **What it is**: The first thing you see.
-  - **How it works**: Uses an `AnimationController` to fade in the logo. After 2 seconds, it automatically calls `Navigator.pushReplacementNamed('/home')` to swap itself with the Home Screen.
+## Firebase Configuration
 
-#### Home Feature (`features/home/`)
-- **`screens/home_screen.dart`**
-  - **What it is**: The Main Screen.
-  - **Key Components**:
-    - `FlutterMap`: The interactive map widget.
-    - `MarkerLayer`: Draws the red pins (Spots) and the blue dot (User).
-    - `FloatingActionButton`: The buttons in the bottom right (Location & Add).
-    - `AppDrawer`: The side menu (Hamburger menu).
+### Collections Used
+1. **users** - User profiles
+   - Document ID: Firebase Auth UID
+   - Fields: uid, email, name, phoneNumber, createdAt
 
-- **`widgets/add_spot_dialog.dart`**
-  - **What it is**: The popup form when you click "+".
-  - **Key Logic**: It captures the Name/Description/Rating, validates that they aren't empty, and captures the *current center of the map* as the spot's location.
+2. **locations** - All spots
+   - Auto-generated IDs
+   - Fields: name, latitude, longitude, description, imageUrl, rating, type, status, createdAt
 
-#### Debug Feature (`features/debug/`)
-- **`screens/debug_screen.dart`**
-  - **What it is**: A secret screen for us developers.
-  - **Why**: Helps debug GPS issues by showing raw sensor data that regular users don't need to see.
+### Security Rules Required
+```javascript
+// users collection
+match /users/{userId} {
+  allow read: if request.auth != null;
+  allow write: if request.auth.uid == userId;
+}
 
-### `lib/models/` (The Blueprints)
-- **`location_model.dart`**
-  - **What it is**: Defines what a "Spot" is.
-  - **Properties**: `name`, `latitude`, `longitude`, `type` (Enum: Favorite, Generated, etc.), `rating`.
-  - **Usage**: Throughout the app, we pass around `LocationModel` objects instead of loose variables like `string name`.
+// locations collection
+match /locations/{locationId} {
+  allow read: if request.auth != null;
+  allow create: if request.auth != null;
+  allow update: if request.auth.token.email == 'admin@roamly.com';
+  allow delete: if request.auth.token.email == 'admin@roamly.com';
+}
+```
+
+---
+
+## Common Debug Scenarios
+
+### Issue: Signup doesn't navigate
+**Check:**
+- Firestore has write permissions for `users` collection
+- User profile data is being saved (check Firestore console)
+- No errors in debug console
+
+### Issue: Map picker doesn't open
+**Check:**
+- Route to `SpotMapPicker` widget is correct
+- Import path: `lib/features/shared/widgets/spot_map_picker.dart`
+
+### Issue: Spots not appearing on map
+**Check:**
+- Spot status is 'approved' (user spots need admin approval)
+- `getLocations()` in LocationService filters by status: 'approved'
+- Map is centered on correct coordinates
+
+### Issue: Admin can't see pending spots
+**Check:**
+- User spots have status: 'pending'
+- `getPendingLocations()` filters correctly
+- Admin is logged in with `admin@roamly.com`
+
+### Issue: Location choice dialog not appearing
+**Check:**
+- `_handleAddSpot()` in home_screen.dart shows dialog
+- Both navigation options return correct values
+
+---
+
+## Development Commands
+
+```bash
+# Run on Chrome
+flutter run -d chrome
+
+# Run on specific device
+flutter run -d linux
+
+# Analyze code
+flutter analyze
+
+# Clean build
+flutter clean && flutter pub get
+
+# Build for web
+flutter build web
+```
+
+---
+
+## Architecture Notes
+
+### Null Safety
+- All nullable types properly handled with `?` and `!` operators
+- Flow analysis assisted with local variables after null checks
+
+### State Management
+- StatefulWidget with setState for local UI state
+- Firebase Auth for authentication state
+- Firestore for persistent data
+
+### Navigation Flow
+```
+Splash (3s delay)
+  ↓
+Login/Signup (Tabs)
+  ↓
+Role Check (email-based)
+  ├─ admin@roamly.com → Admin Dashboard
+  └─ other users → User Dashboard (HomeScreen)
+```
+
+---
+
+## Known Issues & Limitations
+
+1. **OSM Tile Servers**: Using OpenStreetMap public tiles (see console warnings)
+   - For production, consider paid tile provider
+   - See: https://docs.fleaflet.dev/osm-warn
+
+2. **Email-based Admin**: Admin role determined by email hardcode
+   - Future: Use Firebase Custom Claims for role management
+
+3. **No offline support**: Requires internet for Firebase and map tiles
+
+4. **Web geolocation**: May not work on all browsers/contexts
+   - Always provide map picker as fallback
+
+---
+
+## Testing Checklist
+
+- [ ] New user signup with all fields
+- [ ] User login with existing account
+- [ ] Admin login with admin@roamly.com
+- [ ] User add spot - current location
+- [ ] User add spot - map picker
+- [ ] Admin approve pending spot
+- [ ] Admin reject pending spot
+- [ ] Admin add spot with map picker
+- [ ] Logout from user dashboard
+- [ ] Logout from admin dashboard
+- [ ] User profile saved to Firestore
+- [ ] Spot status workflow (pending → approved)
+
+---
+
+## Debug Console Messages
+
+### Expected Messages
+```
+SIGNUP SUCCESS: [email]
+LOGIN SUCCESS: [email] (Admin: [true/false])
+```
+
+### Map Warnings (Normal)
+```
+flutter_map wants to help keep map data available for everyone...
+OSM Tile Usage Policy warning
+```
+
+---
+
+## Contact & Support
+
+For issues or questions:
+1. Check Firestore console for data integrity
+2. Review Firebase Authentication users list
+3. Check debug console for error messages
+4. Verify all imports and routing paths
+
+Last Updated: February 2026

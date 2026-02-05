@@ -5,7 +5,8 @@ import 'package:roamly/core/core.dart';
 import 'package:roamly/core/services/location_service.dart';
 import 'package:roamly/models/location_model.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:roamly/features/auth/screens/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:roamly/features/shared/widgets/spot_map_picker.dart';
 import '../widgets/add_spot_dialog.dart';
 import '../../debug/screens/debug_screen.dart';
 
@@ -89,44 +90,66 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleAddSpot() async {
-    // Try to get the latest location if we don't have it yet
-    if (_currentPosition == null) {
+    // Show dialog to choose location method
+    final String? choice = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Location'),
+        content: const Text('How would you like to select the location for your new spot?'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.pop(context, 'current'),
+            icon: const Icon(Icons.my_location),
+            label: const Text('Current Location'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context, 'map'),
+            icon: const Icon(Icons.map),
+            label: const Text('Pick on Map'),
+          ),
+        ],
+      ),
+    );
+
+    if (choice == null || !mounted) return;
+
+    LatLng? spotLocation;
+
+    if (choice == 'current') {
+     // Use current location
       try {
         final position = await Geolocator.getCurrentPosition();
-        setState(() {
-          _currentPosition = LatLng(position.latitude, position.longitude);
-        });
+        spotLocation = LatLng(position.latitude, position.longitude);
       } catch (e) {
-        debugPrint('Could not get current location for add spot: $e');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not get current location. Try picking on map.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
       }
+    } else {
+      // Pick on map
+      spotLocation = await Navigator.push<LatLng>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SpotMapPicker(),
+        ),
+      );
     }
 
-    // Use current user location if available, otherwise map center
-    final LatLng spotLocation = _currentPosition ?? _mapController.camera.center;
-    
-    // Debug feedback for the user
-    if (!mounted) return;
-    if (_currentPosition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Using Map Center (GPS not found)'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    } else {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Using Current GPS Location'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
+    if (spotLocation == null || !mounted) return;
+
+    // Use local variable to help Dart's flow analysis
+    final selectedLocation = spotLocation;
 
     final LocationModel? newLocation = await showDialog<LocationModel>(
       context: context,
       builder: (context) => AddSpotDialog(
-        currentLat: spotLocation.latitude,
-        currentLng: spotLocation.longitude,
+        currentLat: selectedLocation.latitude,
+        currentLng: selectedLocation.longitude,
       ),
     );
 
@@ -437,14 +460,12 @@ class AppDrawer extends StatelessWidget {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.login),
-            title: const Text('Admin / Login'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout'),
+            onTap: () async {
+              await FirebaseAuth.instance.signOut();
+              if (!context.mounted) return;
+              Navigator.pushReplacementNamed(context, '/login');
             },
           ),
         ],
