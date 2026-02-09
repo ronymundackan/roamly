@@ -12,6 +12,7 @@ import '../widgets/location_search_delegate.dart';
 import '../../debug/screens/debug_screen.dart';
 import 'package:roamly/models/search_result_model.dart';
 import 'package:roamly/core/constants/mapbox_config.dart';
+import 'package:roamly/features/companions/screens/find_companion_screen.dart';
 
 /// Home screen with map view and mark spot feature
 class HomeScreen extends StatefulWidget {
@@ -99,7 +100,9 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Choose Location'),
-        content: const Text('How would you like to select the location for your new spot?'),
+        content: const Text(
+          'How would you like to select the location for your new spot?',
+        ),
         actions: [
           TextButton.icon(
             onPressed: () => Navigator.pop(context, 'current'),
@@ -120,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
     LatLng? spotLocation;
 
     if (choice == 'current') {
-     // Use current location
+      // Use current location
       try {
         final position = await Geolocator.getCurrentPosition();
         spotLocation = LatLng(position.latitude, position.longitude);
@@ -128,7 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not get current location. Try picking on map.'),
+            content: Text(
+              'Could not get current location. Try picking on map.',
+            ),
             backgroundColor: Colors.orange,
           ),
         );
@@ -138,9 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Pick on map
       spotLocation = await Navigator.push<LatLng>(
         context,
-        MaterialPageRoute(
-          builder: (context) => const SpotMapPicker(),
-        ),
+        MaterialPageRoute(builder: (context) => const SpotMapPicker()),
       );
     }
 
@@ -272,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.blue.withOpacity(0.3),
+                          color: Colors.blue.withValues(alpha: 0.3),
                           border: Border.all(color: Colors.blue, width: 2),
                         ),
                         child: const Center(
@@ -470,7 +473,10 @@ class AppDrawer extends StatelessWidget {
             title: const Text('Find Companions'),
             onTap: () {
               Navigator.pop(context);
-              // TODO: Navigate to find companions
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const FindCompanionScreen()),
+              );
             },
           ),
           ListTile(
