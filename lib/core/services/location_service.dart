@@ -91,4 +91,41 @@ class LocationService {
       return 'Failed to add location: $e';
     }
   }
+
+  /// Search approved locations by name (for smart search feature)
+  Future<List<LocationModel>> searchApprovedLocations(String query) async {
+    if (query.trim().isEmpty) return [];
+    
+    try {
+      // Firestore doesn't support full-text search, so we fetch all approved
+      // locations and filter locally. For better performance with large datasets,
+      // consider using Algolia or ElasticSearch in the future.
+      final snapshot = await _firestore
+          .collection(_collection)
+          .where('status', isEqualTo: 'approved')
+          .get();
+      
+      final allLocations = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return LocationModel.fromMap(data);
+      }).toList();
+
+      // Filter by name (case-insensitive contains)
+      final queryLower = query.toLowerCase();
+      return allLocations.where((loc) {
+        final nameLower = loc.name.toLowerCase();
+        final descLower = (loc.description ?? '').toLowerCase();
+        final tagsLower = loc.tags.join(' ').toLowerCase();
+        
+        return nameLower.contains(queryLower) ||
+               descLower.contains(queryLower) ||
+               tagsLower.contains(queryLower);
+      }).toList();
+    } catch (e) {
+      debugPrint('Error searching locations: $e');
+      return [];
+    }
+  }
 }
+

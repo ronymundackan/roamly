@@ -8,7 +8,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:roamly/features/shared/widgets/spot_map_picker.dart';
 import '../widgets/add_spot_dialog.dart';
+import '../widgets/location_search_delegate.dart';
 import '../../debug/screens/debug_screen.dart';
+import 'package:roamly/models/search_result_model.dart';
+import 'package:roamly/core/constants/mapbox_config.dart';
 
 /// Home screen with map view and mark spot feature
 class HomeScreen extends StatefulWidget {
@@ -24,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<LocationModel> _locations = [];
   final LatLng _center = const LatLng(12.9716, 77.5946); // Default: Bangalore
   LatLng? _currentPosition;
+  LatLng? _searchResultLocation; // Marker for selected search result
 
   @override
   void initState() {
@@ -187,8 +191,31 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search
+            onPressed: () async {
+              final result = await showSearch(
+                context: context,
+                delegate: LocationSearchDelegate(
+                  userLocation: _currentPosition,
+                  searchRadiusKm: 50.0,
+                ),
+              );
+
+              if (result != null && mounted) {
+                // Set search result marker location
+                setState(() {
+                  _searchResultLocation = LatLng(result.latitude, result.longitude);
+                });
+
+                // Move map to selected location with moderate zoom
+                final location = LatLng(result.latitude, result.longitude);
+                _mapController.move(location, 14.0); // Reduced from 16 to show more context
+
+                // Show location details in bottom sheet
+                showModalBottomSheet(
+                  context: context,
+                  builder: (ctx) => _SearchResultSheet(result: result),
+                );
+              }
             },
           ),
           IconButton(
@@ -207,8 +234,10 @@ class _HomeScreenState extends State<HomeScreen> {
             options: MapOptions(initialCenter: _center, initialZoom: 19.0),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.roamly.roamly',
+                urlTemplate: MapboxConfig.streetStyleUrl,
+                additionalOptions: const {
+                  'id': 'mapbox.streets',
+                },
               ),
               MarkerLayer(
                 markers: _locations.map((loc) {
@@ -252,6 +281,28 @@ class _HomeScreenState extends State<HomeScreen> {
                             backgroundColor: Colors.blue,
                           ),
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+              // Marker for selected search result
+              if (_searchResultLocation != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _searchResultLocation!,
+                      width: 50,
+                      height: 50,
+                      child: const Icon(
+                        Icons.place,
+                        color: Colors.purple,
+                        size: 50,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 4,
+                            color: Colors.black45,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -468,6 +519,99 @@ class AppDrawer extends StatelessWidget {
               Navigator.pushReplacementNamed(context, '/login');
             },
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet to display search result details
+class _SearchResultSheet extends StatelessWidget {
+  final SearchResult result;
+
+  const _SearchResultSheet({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                result.source == SearchResultSource.userAdded
+                    ? Icons.location_on
+                    : Icons.map,
+                color: result.source == SearchResultSource.userAdded
+                    ? Colors.green
+                    : Colors.purple, // Purple for Mapbox
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  result.displayName,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (result.subtitle != null)
+            Text(
+              result.subtitle!,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          const SizedBox(height: 8),
+          Text(
+            'Source: ${result.source == SearchResultSource.userAdded ? "User-Added Location" : "Mapbox"}',
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Coordinates: ${result.latitude.toStringAsFixed(6)}, ${result.longitude.toStringAsFixed(6)}',
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          ),
+          // Show additional details for Firestore locations
+          if (result.firestoreLocation != null) ...[
+            const SizedBox(height: 16),
+            if (result.firestoreLocation!.rating != null)
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 20),
+                  const SizedBox(width: 4),
+                  Text(result.firestoreLocation!.rating.toString()),
+                ],
+              ),
+            if (result.firestoreLocation!.tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: result.firestoreLocation!.tags.map((tag) {
+                  return Chip(
+                    label: Text(tag, style: const TextStyle(fontSize: 12)),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  );
+                }).toList(),
+              ),
+            ],
+            if (result.firestoreLocation!.imageUrl != null) ...[
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  result.firestoreLocation!.imageUrl!,
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const SizedBox(),
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
