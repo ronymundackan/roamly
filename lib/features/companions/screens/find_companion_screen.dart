@@ -7,6 +7,7 @@ import 'package:roamly/core/services/user_service.dart';
 import 'package:roamly/core/services/request_service.dart';
 import 'package:roamly/models/user_profile_model.dart';
 import 'package:roamly/features/companions/screens/requests_screen.dart';
+import 'package:roamly/core/constants/mapbox_config.dart';
 
 class FindCompanionScreen extends StatefulWidget {
   const FindCompanionScreen({super.key});
@@ -80,14 +81,6 @@ class _FindCompanionScreenState extends State<FindCompanionScreen> {
       setState(() {
         _currentPosition = position;
       });
-
-      // Initial map center
-      if (_mapController.mapEventStream.isBroadcast) {
-        _mapController.move(
-          LatLng(position.latitude, position.longitude),
-          13.0,
-        );
-      }
 
       // Start listening to nearby users
       _listenToNearbyUsers();
@@ -242,8 +235,7 @@ class _FindCompanionScreenState extends State<FindCompanionScreen> {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.roamly.roamly',
+          urlTemplate: MapboxConfig.streetStyleUrl,
         ),
         MarkerLayer(
           markers: [

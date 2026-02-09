@@ -6,6 +6,7 @@ import 'package:roamly/models/user_profile_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:roamly/core/constants/mapbox_config.dart';
 
 class RequestsScreen extends StatefulWidget {
   const RequestsScreen({super.key});
@@ -189,9 +190,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                                   ),
                                   children: [
                                     TileLayer(
-                                      urlTemplate:
-                                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                      userAgentPackageName: 'com.roamly.roamly',
+                                      urlTemplate: MapboxConfig.streetStyleUrl,
                                     ),
                                     MarkerLayer(
                                       markers: [

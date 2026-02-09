@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:roamly/core/constants/mapbox_config.dart';
 
 /// Full-screen map picker to select a location for adding a new spot
 /// Can be used by both users and admins
@@ -42,8 +43,7 @@ class _SpotMapPickerState extends State<SpotMapPicker> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.roamly.roamly',
+                urlTemplate: MapboxConfig.streetStyleUrl,
               ),
               MarkerLayer(
                 markers: [
